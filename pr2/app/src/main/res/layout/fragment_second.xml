@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Заголовок второго фрагмента -->
         <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
@@ -25,7 +24,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             android:layout_marginTop="16dp" />
 
-        <!-- TextView для отображения списка расходов -->
         <TextView
             android:id="@+id/expenseTextView"
             android:layout_width="0dp"
@@ -45,9 +43,6 @@
             android:maxLines="10"
             android:ellipsize="end" />
 
-        <!-- Кнопка для перехода на третий фрагмент (через транзакцию) -->
-
-        <!-- Кнопка для перехода на третий фрагмент (через Navigation API) -->
         <Button
             android:id="@+id/nextFragmentWithTransition"
             android:layout_width="wrap_content"

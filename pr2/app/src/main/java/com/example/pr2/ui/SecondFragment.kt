@@ -5,8 +5,6 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import com.example.pr2.R
@@ -28,6 +26,7 @@ class SecondFragment : Fragment() {
         val view = binding.root
         return view
     }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
@@ -46,23 +45,18 @@ class SecondFragment : Fragment() {
 
         // Настройка кнопок навигации
         binding.nextFragmentWithTransition.setOnClickListener {
-            // Логика для перехода
-        }
-        binding.nextFragmentWithNavigationApi.setOnClickListener {
-            // Логика для перехода
-        }
-
-        binding.nextFragmentWithTransition.setOnClickListener {
             val fragmentManager = requireActivity().supportFragmentManager
             val fragmentTransaction = fragmentManager.beginTransaction()
             fragmentTransaction.replace(R.id.fragment_container, ThirdFragment())
             fragmentTransaction.addToBackStack(null)
             fragmentTransaction.commit()
         }
+
         binding.nextFragmentWithNavigationApi.setOnClickListener {
             findNavController().navigate(R.id.action_secondFragment_to_thirdFragment)
         }
     }
+
     private fun updateExpenseList(expenses: List<Expense>) {
         val expenseText = expenses.joinToString("\n") { "${it.amount} - ${it.category} - ${it.date}" }
         binding.expenseTextView.text = if (expenseText.isEmpty()) "Расходов нет" else expenseText

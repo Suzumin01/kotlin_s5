@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Заголовок первого фрагмента -->
         <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
@@ -25,7 +24,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintVertical_bias="0.1" />
 
-        <!-- Поле для ввода суммы -->
         <EditText
             android:id="@+id/amountEditText"
             android:layout_width="334dp"
@@ -40,7 +38,6 @@
             app:layout_constraintTop_toBottomOf="@id/textView"
             app:layout_constraintWidth_percent="0.8" />
 
-        <!-- Поле для ввода категории -->
         <EditText
             android:id="@+id/categoryEditText"
             android:layout_width="334dp"
@@ -55,7 +52,6 @@
             app:layout_constraintTop_toBottomOf="@id/amountEditText"
             app:layout_constraintWidth_percent="0.8" />
 
-        <!-- Поле для отображения выбранной даты -->
         <TextView
             android:id="@+id/dateTextView"
             android:layout_width="wrap_content"
@@ -69,7 +65,6 @@
             android:layout_marginTop="16dp"
             android:padding="10dp" />
 
-        <!-- Кнопка для выбора даты -->
         <Button
             android:id="@+id/pickDateButton"
             android:layout_width="wrap_content"
@@ -81,7 +76,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             android:layout_marginTop="8dp" />
 
-        <!-- Кнопка для добавления расхода -->
         <Button
             android:id="@+id/addExpenseButton"
             android:layout_width="wrap_content"
@@ -93,7 +87,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             android:layout_marginTop="16dp" />
 
-        <!-- Кнопка для перехода на второй фрагмент (через транзакцию) -->
         <Button
             android:id="@+id/nextFragmentWithTransition"
             android:layout_width="wrap_content"
@@ -105,7 +98,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             app:layout_constraintStart_toStartOf="parent" />
 
-        <!-- Кнопка для перехода на второй фрагмент (через Navigation API) -->
         <Button
             android:id="@+id/nextFragmentWithNavigationApi"
             android:layout_width="wrap_content"

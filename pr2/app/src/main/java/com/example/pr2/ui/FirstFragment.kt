@@ -69,28 +69,23 @@ class FirstFragment : Fragment() {
             findNavController().navigate(R.id.action_firstFragment_to_secondFragment)
         }
     }
-    // Метод для отображения DatePickerDialog
+
     private fun showDatePickerDialog() {
         val year = selectedDate.get(Calendar.YEAR)
         val month = selectedDate.get(Calendar.MONTH)
         val day = selectedDate.get(Calendar.DAY_OF_MONTH)
 
-        // Создаем диалог для выбора даты
         val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, selectedYear, selectedMonth, selectedDay ->
-                // Обновляем выбранную дату
                 selectedDate.set(selectedYear, selectedMonth, selectedDay)
-                // Обновляем текстовое поле с выбранной датой
                 updateDateText()
             },
             year, month, day
         )
-
         datePickerDialog.show()
     }
 
-    // Обновляем отображаемую дату в TextView
     private fun updateDateText() {
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
         binding.dateTextView.text = dateFormat.format(selectedDate.time)

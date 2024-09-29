@@ -10,7 +10,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <!-- Заголовок третьего фрагмента -->
         <TextView
             android:id="@+id/textView"
             android:layout_width="wrap_content"
@@ -25,7 +24,6 @@
             app:layout_constraintHorizontal_bias="0.5"
             android:layout_marginTop="16dp" />
 
-        <!-- TextView для отображения сумм расходов -->
         <TextView
             android:id="@+id/categorySummaryTextView"
             android:layout_width="0dp"

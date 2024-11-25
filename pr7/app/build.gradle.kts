@@ -46,18 +46,16 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.core.ktx)
 
     testImplementation(libs.junit)
-
-    testImplementation("org.mockito:mockito-core:4.11.0")
-    testImplementation("io.mockk:mockk:1.12.0")
-    testImplementation("com.squareup.okhttp3:mockwebserver:4.9.0")
 
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation("androidx.test.espresso:espresso-contrib:3.6.1")
-    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
+
     androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
 }

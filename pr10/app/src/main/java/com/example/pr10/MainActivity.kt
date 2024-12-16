@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,14 +21,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.*
+import androidx.work.*
 import com.example.pr10.ui.theme.Pr10Theme
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import java.io.FileOutputStream
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -37,44 +32,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             Pr10Theme {
                 val imageList = remember { mutableStateListOf<Bitmap>() }
-                AppScaffold(imageList = imageList)
-            }
-        }
-    }
-
-    suspend fun downloadImage(url: String): Bitmap? = withContext(Dispatchers.IO) {
-        try {
-            val client = OkHttpClient()
-            val request = Request.Builder().url(url).build()
-            val response = client.newCall(request).execute()
-            val inputStream = response.body?.byteStream()
-            BitmapFactory.decodeStream(inputStream)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }
-
-    suspend fun saveImage(image: Bitmap, filename: String) = withContext(Dispatchers.IO) {
-        try {
-            val fos: FileOutputStream = openFileOutput(filename, MODE_PRIVATE)
-            image.compress(Bitmap.CompressFormat.PNG, 100, fos)
-            fos.flush()
-            fos.close()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun downloadAndSaveImage(url: String, filename: String, imageList: MutableList<Bitmap>) {
-        CoroutineScope(Dispatchers.Main).launch {
-            val image: Bitmap? = downloadImage(url)
-            if (image != null) {
-                saveImage(image, "$filename.png")
-                imageList.add(image)
-                Toast.makeText(applicationContext, "Image saved", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(applicationContext, "Error downloading image", Toast.LENGTH_SHORT).show()
+                MainApp(imageList)
             }
         }
     }
@@ -82,75 +40,51 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppScaffold(imageList: MutableList<Bitmap>) {
-    var currentScreen by remember { mutableStateOf("Download") }
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        drawerContent = {
-            DrawerContent(onScreenSelect = { screen ->
-                currentScreen = screen
-                scope.launch { drawerState.close() }
-            })
+fun MainApp(imageList: MutableList<Bitmap>) {
+    val navController = rememberNavController()
+    Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Image Downloader") })
+        },
+        bottomBar = {
+            BottomNavigationBar(navController)
         }
-    ) {
-        Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text(currentScreen) },
-                    navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Filled.Menu, contentDescription = "Menu")
-                        }
-                    }
-                )
-            },
-            bottomBar = {
-                BottomAppBar {
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Filled.Download, contentDescription = "Download") },
-                        label = { Text("Download") },
-                        selected = currentScreen == "Download",
-                        onClick = { currentScreen = "Download" }
-                    )
-                    NavigationBarItem(
-                        icon = { Icon(Icons.Filled.History, contentDescription = "History") },
-                        label = { Text("History") },
-                        selected = currentScreen == "History",
-                        onClick = { currentScreen = "History" }
-                    )
-                }
-            }
-        ) { innerPadding ->
-            Box(modifier = Modifier.padding(innerPadding)) {
-                when (currentScreen) {
-                    "Download" -> DownloadScreen(imageList)
-                    "History" -> HistoryScreen(imageList)
-                }
-            }
+    ) { paddingValues ->
+        NavHost(
+            navController = navController,
+            startDestination = "download",
+            Modifier.padding(paddingValues)
+        ) {
+            composable("download") { DownloadScreen(imageList) }
+            composable("history") { HistoryScreen(imageList) }
         }
     }
 }
 
 @Composable
-fun DrawerContent(onScreenSelect: (String) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        TextButton(onClick = { onScreenSelect("Download") }) {
-            Text("Download Screen")
-        }
-        TextButton(onClick = { onScreenSelect("History") }) {
-            Text("History Screen")
-        }
+fun BottomNavigationBar(navController: NavHostController) {
+    BottomAppBar {
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.Download, contentDescription = "Download") },
+            label = { Text("Download") },
+            selected = false,
+            onClick = { navController.navigate("download") }
+        )
+        NavigationBarItem(
+            icon = { Icon(Icons.Filled.History, contentDescription = "History") },
+            label = { Text("History") },
+            selected = false,
+            onClick = { navController.navigate("history") }
+        )
     }
 }
 
 @Composable
 fun DownloadScreen(imageList: MutableList<Bitmap>) {
     val context = LocalContext.current
-    var url by remember { mutableStateOf("") }
-    var filename by remember { mutableStateOf("") }
+    var url by remember { mutableStateOf("https://sun1-13.userapi.com/impg/YBSqa8ohZvZifBvip8GArdhYjDu9PSNSDNR7yg/XfQyuC12nlw.jpg?size=900x1027&quality=96&sign=f2ada84e5649c1ba66dc60c484671220&type=album") }
+    var filename by remember { mutableStateOf("downloaded_image.png") }
+    val workManager = WorkManager.getInstance(context)
 
     Column(
         modifier = Modifier
@@ -162,38 +96,38 @@ fun DownloadScreen(imageList: MutableList<Bitmap>) {
         TextField(
             value = url,
             onValueChange = { url = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Enter image URL") }
+            label = { Text("Enter Image URL") },
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
-
         TextField(
             value = filename,
             onValueChange = { filename = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Enter file name") }
+            label = { Text("Enter File Name") },
+            modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        Button(
-            onClick = {
-                if (url.isNotEmpty() && filename.isNotEmpty()) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        val image: Bitmap? = MainActivity().downloadImage(url)
-                        if (image != null) {
-                            MainActivity().saveImage(image, filename)
-                            imageList.add(image)
-                            Toast.makeText(context, "Image saved!", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
+        Button(onClick = {
+            val workRequest = OneTimeWorkRequestBuilder<ImageDownloadWorker>()
+                .setInputData(workDataOf("IMAGE_URL" to url, "FILE_NAME" to filename))
+                .build()
+
+            workManager.enqueue(workRequest)
+            workManager.getWorkInfoByIdLiveData(workRequest.id).observeForever { info ->
+                info?.let {
+                    if (it.state == WorkInfo.State.SUCCEEDED) {
+                        Toast.makeText(context, "Image downloaded successfully", Toast.LENGTH_SHORT).show()
+                        val filePath = it.outputData.getString("FILE_PATH")
+                        filePath?.let { path ->
+                            val bitmap = BitmapFactory.decodeFile(path)
+                            imageList.add(bitmap)
                         }
                     }
-                } else {
-                    Toast.makeText(context, "Fill in all fields", Toast.LENGTH_SHORT).show()
                 }
             }
-        ) {
-            Text("Download and Save")
+        }) {
+            Text("Download Image")
         }
     }
 }
@@ -202,31 +136,22 @@ fun DownloadScreen(imageList: MutableList<Bitmap>) {
 fun HistoryScreen(imageList: List<Bitmap>) {
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         items(imageList) { bitmap ->
-            ImageItem(bitmap)
+            Image(
+                bitmap = bitmap.asImageBitmap(),
+                contentDescription = "Downloaded Image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .padding(8.dp)
+            )
         }
-    }
-}
-
-@Composable
-fun ImageItem(bitmap: Bitmap) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            bitmap = bitmap.asImageBitmap(),
-            contentDescription = null,
-            modifier = Modifier.size(200.dp)
-        )
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewApp() {
+fun DefaultPreview() {
     Pr10Theme {
-        AppScaffold(imageList = remember { mutableStateListOf() })
+        MainApp(remember { mutableStateListOf() })
     }
 }

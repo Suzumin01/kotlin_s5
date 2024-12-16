@@ -50,6 +50,8 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material.icons.extended)
 
     implementation(libs.okhttp3.okhttp)

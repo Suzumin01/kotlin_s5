@@ -8,6 +8,12 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,32 +30,19 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.FileOutputStream
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             Pr10Theme {
-                val context = LocalContext.current
                 val imageList = remember { mutableStateListOf<Bitmap>() }
-
-                MainScreen(
-                    imageList = imageList,
-                    onSaveClick = { url, filename ->
-                        if (url.isEmpty() || filename.isEmpty()) {
-                            Toast.makeText(context, "Заполните все поля", Toast.LENGTH_SHORT).show()
-                        } else {
-                            downloadAndSaveImage(url, filename, imageList)
-                        }
-                    }
-                )
+                AppScaffold(imageList = imageList)
             }
         }
     }
 
-    private suspend fun downloadImage(url: String): Bitmap? = withContext(Dispatchers.IO) {
+    suspend fun downloadImage(url: String): Bitmap? = withContext(Dispatchers.IO) {
         try {
             val client = OkHttpClient()
             val request = Request.Builder().url(url).build()
@@ -62,7 +55,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun saveImage(image: Bitmap, filename: String) = withContext(Dispatchers.IO) {
+    suspend fun saveImage(image: Bitmap, filename: String) = withContext(Dispatchers.IO) {
         try {
             val fos: FileOutputStream = openFileOutput(filename, MODE_PRIVATE)
             image.compress(Bitmap.CompressFormat.PNG, 100, fos)
@@ -87,11 +80,75 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(
-    imageList: List<Bitmap>,
-    onSaveClick: (String, String) -> Unit
-) {
+fun AppScaffold(imageList: MutableList<Bitmap>) {
+    var currentScreen by remember { mutableStateOf("Download") }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(onScreenSelect = { screen ->
+                currentScreen = screen
+                scope.launch { drawerState.close() }
+            })
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text(currentScreen) },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Filled.Menu, contentDescription = "Menu")
+                        }
+                    }
+                )
+            },
+            bottomBar = {
+                BottomAppBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Filled.Download, contentDescription = "Download") },
+                        label = { Text("Download") },
+                        selected = currentScreen == "Download",
+                        onClick = { currentScreen = "Download" }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Filled.History, contentDescription = "History") },
+                        label = { Text("History") },
+                        selected = currentScreen == "History",
+                        onClick = { currentScreen = "History" }
+                    )
+                }
+            }
+        ) { innerPadding ->
+            Box(modifier = Modifier.padding(innerPadding)) {
+                when (currentScreen) {
+                    "Download" -> DownloadScreen(imageList)
+                    "History" -> HistoryScreen(imageList)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun DrawerContent(onScreenSelect: (String) -> Unit) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        TextButton(onClick = { onScreenSelect("Download") }) {
+            Text("Download Screen")
+        }
+        TextButton(onClick = { onScreenSelect("History") }) {
+            Text("History Screen")
+        }
+    }
+}
+
+@Composable
+fun DownloadScreen(imageList: MutableList<Bitmap>) {
+    val context = LocalContext.current
     var url by remember { mutableStateOf("") }
     var filename by remember { mutableStateOf("") }
 
@@ -102,12 +159,11 @@ fun MainScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-
         TextField(
             value = url,
             onValueChange = { url = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Введите ссылку на изображение") }
+            label = { Text("Enter image URL") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -115,26 +171,38 @@ fun MainScreen(
             value = filename,
             onValueChange = { filename = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Введите название файла") }
+            label = { Text("Enter file name") }
         )
         Spacer(modifier = Modifier.height(16.dp))
 
         Button(
             onClick = {
-                onSaveClick(url, filename)
-            },
-            modifier = Modifier.padding(8.dp)
-        ) {
-            Text("Сохранить")
-        }
-        Spacer(modifier = Modifier.height(16.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(imageList) { bitmap ->
-                ImageItem(bitmap = bitmap)
+                if (url.isNotEmpty() && filename.isNotEmpty()) {
+                    CoroutineScope(Dispatchers.Main).launch {
+                        val image: Bitmap? = MainActivity().downloadImage(url)
+                        if (image != null) {
+                            MainActivity().saveImage(image, filename)
+                            imageList.add(image)
+                            Toast.makeText(context, "Image saved!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Download failed", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "Fill in all fields", Toast.LENGTH_SHORT).show()
+                }
             }
+        ) {
+            Text("Download and Save")
+        }
+    }
+}
+
+@Composable
+fun HistoryScreen(imageList: List<Bitmap>) {
+    LazyColumn(modifier = Modifier.fillMaxSize()) {
+        items(imageList) { bitmap ->
+            ImageItem(bitmap)
         }
     }
 }
@@ -149,22 +217,16 @@ fun ImageItem(bitmap: Bitmap) {
     ) {
         Image(
             bitmap = bitmap.asImageBitmap(),
-            contentDescription = "Downloaded Image",
-            modifier = Modifier
-                .size(200.dp)
-                .padding(8.dp)
+            contentDescription = null,
+            modifier = Modifier.size(200.dp)
         )
-        Divider()
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewMainScreen() {
+fun PreviewApp() {
     Pr10Theme {
-        MainScreen(
-            imageList = emptyList(),
-            onSaveClick = { _, _ -> }
-        )
+        AppScaffold(imageList = remember { mutableStateListOf() })
     }
 }
